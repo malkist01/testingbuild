@@ -1,4 +1,4 @@
-name: 🚀 KSUN-Nadir Build
+name: 🚀 CLMP2-Nadir Build
 
 on:
   workflow_dispatch:
@@ -13,10 +13,10 @@ jobs:
   build_kernel:
     runs-on: ubuntu-latest
     env:
-      PROJECT_NAME: CLMP
+      PROJECT_NAME: CLMP2
       BUILD_SCRIPT: xx2.sh
       # Define Clang version here to manage caching efficiently
-      CLANG_VERSION: r584948
+      CLANG_VERSION: r584948b
       CLANG_PATH: tools
       # Pass the boolean input to the environment
       CLEAN_BUILD: ${{ inputs.clean_build }}
@@ -55,7 +55,7 @@ jobs:
           GL_DEPLOY_USER: ${{ secrets.GL_DEPLOY_USER }}
           GL_DEPLOY_TOKEN: ${{ secrets.GL_DEPLOY_TOKEN }}
           KERNEL_REPO_URL: ${{ secrets.KERNEL_REPO_URL }}
-          KERNEL_BRANCH: NadirKSUN
+          KERNEL_BRANCH: NadirCLMP2
         run: |
           chmod +x $BUILD_SCRIPT
           ./$BUILD_SCRIPT

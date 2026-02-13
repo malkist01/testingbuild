@@ -6,7 +6,7 @@ readonly WORKSPACE="${GITHUB_WORKSPACE:-$(pwd)}"
 readonly KERNEL_DIR="$WORKSPACE/Kinesis_Kernel"
 readonly TOOLS_DIR="$WORKSPACE/tools"
 # Use env var from YAML, fallback to default if run locally
-readonly CLANG_VER="${CLANG_VERSION:-r584948}"
+readonly CLANG_VER="${CLANG_VERSION:-r584948b}"
 readonly CLANG_DIR="$TOOLS_DIR/clang-$CLANG_VER"
 readonly DEFCONFIG="vendor/xiaomi/miatoll_defconfig"
 readonly ANYKERNEL_BRANCH="Ivory"
@@ -61,7 +61,7 @@ start_monitor() {
         local sec=$((diff % 60))
         local obj_count=$(find out -name "*.o" 2>/dev/null | wc -l)
 
-        local status_txt="<b>🚀 KSUN Build Progress</b>%0A%0A"
+        local status_txt="<b>🚀 CLMP2 Build Progress</b>%0A%0A"
         status_txt+="<b>• Device:</b> Miatoll%0A"
         status_txt+="<b>• Compiler:</b> Clang $CLANG_VER%0A"
         status_txt+="<b>• Objects Built:</b> ${obj_count}%0A"
@@ -85,7 +85,7 @@ cd "$KERNEL_DIR"
 
 # 2. Setup KernelSU
 echo "🔧 Setting up KernelSU..."
-curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
+curl -LSs "https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh" | bash -s master
 
 # 3. Setup Toolchain & Ccache
 mkdir -p "$TOOLS_DIR"
