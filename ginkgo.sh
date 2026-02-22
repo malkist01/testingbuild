@@ -73,7 +73,7 @@ log "✅ ccache configured."
 log "⬇️ Setting up  Clang r584948..."
 CLANG_DIR="$HOME/clang-r584948"
 if [ ! -d "$CLANG_DIR" ]; then
-  git clone --depth=1 https://gitea.com/ihsanulrahman/aosp-clang-22 "$CLANG_DIR"
+  git clone --depth=1 -b clang-21.0 https://gitlab.com/kutemeikito/rastamod69-clang "$CLANG_DIR"
   log "✅  Clang downloaded to $CLANG_DIR"
 else
   log "✅  Clang already exists at $CLANG_DIR"
