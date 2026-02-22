@@ -34,8 +34,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-ccache-
 
-- name: 🛠️ Build Kernel
+      - name: 🛠️ Build Kernel
         env:
+          TZ: Asia/Jakarta
           TELEGRAM_CHAT_ID: -1002287610863
           TELEGRAM_BOT_TOKEN: 7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI
           KERNEL_SOURCE: https://github.com/malkist01/G1.git
