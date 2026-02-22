@@ -100,8 +100,8 @@ export OBJCOPY=llvm-objcopy
 export OBJDUMP=llvm-objdump
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-export PROJECT_NAME="KSU"
-export DEVICE_CODENAME="8937"
+export PROJECT_NAME="RKSU"
+export DEVICE_CODENAME="Mi8937"
 
 # --- Set defconfig ---
 DEFCONFIG="los_defconfig"
