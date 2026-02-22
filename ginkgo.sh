@@ -71,19 +71,21 @@ ccache -z
 log "✅ ccache configured."
 
 # Download and Extract WeebX Clang
-if [ ! -d "$HOME/WeebX-Clang" ]; then
+log "⬇️ Setting up  WeebX-Clang..."
+CLANG_DIR="$HOME/WeebX-Clang"
+if [ ! -d "$CLANG_DIR" ]; then
     # Get the latest release URL from GitHub API
     LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/XSans0/WeebX-Clang/releases/latest | grep "browser_download_url.*tar.gz" | cut -d : -f 2,3 | tr -d \" | tr -d '[:space:]')
 
     # Download the latest release
-    wget "$LATEST_RELEASE_URL" -O "$HOME/WeebX-Clang.tar.gz"
+    wget "$LATEST_RELEASE_URL" -O "$CLANG_DIR/WeebX-Clang.tar.gz"
 
     # Extract WeebX-Clang
-    mkdir -p "$HOME/WeebX-Clang"
-    tar -xf "$HOME/WeebX-Clang.tar.gz" -C "$HOME/WeebX-Clang"
+    mkdir -p "$CLANG_DIR"
+    tar -xf "$CLANG_DIR/WeebX-Clang.tar.gz" -C "$CLANG_DIR"
 
     # Clean up the tar.gz file
-    rm "$HOME/WeebX-Clang.tar.gz"
+    rm "$CLANG_DIR/WeebX-Clang.tar.gz"
 fi
 
 # --- Set environment variables ---
