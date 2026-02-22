@@ -70,22 +70,28 @@ ccache -o compression=true
 ccache -z
 log "✅ ccache configured."
 
-# --- Download  Clang r584948 (REPLACE ZYC-CLANG) ---
-log "⬇️ Setting up  Clang r584948..."
-CLANG_DIR="$HOME/clang-r584948"
-if [ ! -d "$CLANG_DIR" ]; then
-  git clone --depth=1 -b clang-21.0 https://gitlab.com/kutemeikito/rastamod69-clang "$CLANG_DIR"
-  log "✅  Clang downloaded to $CLANG_DIR"
-else
-  log "✅  Clang already exists at $CLANG_DIR"
+# Download and Extract WeebX Clang
+if [ ! -d "$HOME/WeebX-Clang" ]; then
+    # Get the latest release URL from GitHub API
+    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/XSans0/WeebX-Clang/releases/latest | grep "browser_download_url.*tar.gz" | cut -d : -f 2,3 | tr -d \" | tr -d '[:space:]')
+
+    # Download the latest release
+    wget "$LATEST_RELEASE_URL" -O "$HOME/WeebX-Clang.tar.gz"
+
+    # Extract WeebX-Clang
+    mkdir -p "$HOME/WeebX-Clang"
+    tar -xf "$HOME/WeebX-Clang.tar.gz" -C "$HOME/WeebX-Clang"
+
+    # Clean up the tar.gz file
+    rm "$HOME/WeebX-Clang.tar.gz"
 fi
 
 # --- Set environment variables ---
 log "🔧 Setting environment variables..."
 export PATH="$CLANG_DIR/bin:$PATH"
 export ARCH=arm64
-export KBUILD_BUILD_USER=Audemars
-export KBUILD_BUILD_HOST=NONKSU
+export KBUILD_BUILD_USER=malkist
+export KBUILD_BUILD_HOST=KSUN-SUSFS
 export TZ=Asia/Jakarta
 export KBUILD_BUILD_TIMESTAMP=$(date '+%a %b %d %H:%M:%S %Z %Y')
 
@@ -97,7 +103,7 @@ export STRIP=llvm-strip
 export OBJCOPY=llvm-objcopy
 export OBJDUMP=llvm-objdump
 export CROSS_COMPILE=aarch64-linux-gnu-
-export PROJECT_NAME="NONKSU"
+export PROJECT_NAME="SUSFS"
 export DEVICE_CODENAME="ginkgo"
 
 # --- Set defconfig ---
