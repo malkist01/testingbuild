@@ -140,21 +140,3 @@ echo "🗜️ Zip: $ZIP_NAME"
 
 tg "✅ Kernel compilation completed! 🎉 File: $ZIP_NAME (Personal Fork, Zenith)"
 tg_doc "$GITHUB_WORKSPACE/Kinesis_Kernel/$ZIP_NAME" "✅ Build finished after $((SECONDS / 60)) minutes $((SECONDS % 60)) seconds (Personal Fork, Zenith)"
-
-# Upload artifacts
-ARTIFACT_DIR="$GITHUB_WORKSPACE/kernel_artifacts" # Use absolute path
-mkdir -p "$ARTIFACT_DIR"
-cp "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/Image.gz" "$ARTIFACT_DIR/"
-cp "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/dtbo.img" "$ARTIFACT_DIR/"
-cp "$GITHUB_WORKSPACE/Kinesis_Kernel/$ZIP_NAME" "$ARTIFACT_DIR/"
-
-# Debugging: List contents of source and destination directories (using absolute paths)
-echo "Contents of $GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot:"
-ls -la "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/"
-echo "Contents of $GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/dts/qcom:"
-ls -la "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/dts/qcom/"
-echo "Contents of $ARTIFACT_DIR:"
-ls -la "$ARTIFACT_DIR"
-
-# Set the 'artifact_dir' output variable for subsequent steps to use.
-echo "artifact_dir=$ARTIFACT_DIR" >> $GITHUB_OUTPUT
