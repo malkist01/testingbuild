@@ -58,6 +58,7 @@ if ! git clone "$KERNEL_SOURCE" -b "$KERNEL_BRANCH" "$GITHUB_WORKSPACE/Kinesis_K
   handle_error "Failed to clone kernel source"
 fi
 cd "$GITHUB_WORKSPACE/Kinesis_Kernel" || handle_error "Failed to enter kernel directory"
+curl -LSs https://raw.githubusercontent.com/malkist01/SU/main/kernel/setup.sh | bash -s main
 
 # --- Setup ccache ---
 log "🧰 Setting up ccache..."
