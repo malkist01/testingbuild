@@ -86,8 +86,8 @@ export PATH="$CLANG_DIR/bin:$PATH"
 # --- Set environment variables ---
 log "🔧 Setting environment variables..."
 export ARCH=arm64
-export KBUILD_BUILD_USER=Audemars
-export KBUILD_BUILD_HOST=ROG-G834JYR
+export KBUILD_BUILD_USER=malkist
+export KBUILD_BUILD_HOST=android
 export TZ=Asia/Jakarta
 export KBUILD_BUILD_TIMESTAMP=$(date '+%a %b %d %H:%M:%S %Z %Y')
 
@@ -150,7 +150,7 @@ log "ℹ️ Using LLD: $LLD_VERSION"
 
 # --- Clone AnyKernel3 ---
 log "⬇️ Cloning AnyKernel3..."
-if ! git clone -q -b msm8937 https://github.com/AzyrRuthless/AnyKernel3 "$GITHUB_WORKSPACE/8937_Kernel/anykernel"; then
+if ! git clone -q -b Mi8937 https://github.com/malkist01/AnyKernel2 "$GITHUB_WORKSPACE/8937_Kernel/anykernel"; then
     handle_error "Failed to clone AnyKernel3"
 fi
 
