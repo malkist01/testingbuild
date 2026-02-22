@@ -39,7 +39,7 @@ jobs:
         env:
           TELEGRAM_CHAT_ID: -1002287610863
           TELEGRAM_BOT_TOKEN: 7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI
-          KERNEL_SOURCE: https://github.com/AzyrRuthless/kernel_msm-4.19
+          KERNEL_SOURCE: https://github.com/malkist01/Mi.git
           KERNEL_BRANCH: mithorium/a13/master
         run: |
           echo "🚀 Starting the kernel build process..."
