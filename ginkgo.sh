@@ -109,7 +109,7 @@ export OBJDUMP=llvm-objdump
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 export PROJECT_NAME="SUSFS"
-xport KERNEL_NAME="Anjani"
+export KERNEL_NAME="Anjani"
 export DEVICE_CODENAME="ginkgo"
 
 # --- Set defconfig ---
