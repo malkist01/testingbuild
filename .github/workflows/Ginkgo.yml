@@ -1,0 +1,53 @@
+name: 🚀 GINKGO NON-KSU
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_kernel:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_NAME: NONKSU-Kinesis
+
+    steps:
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 🧰 Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: 🐳 Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 📦 Install Dependencies
+        run: |
+          echo "🧰 Installing required packages..."
+          sudo apt update
+          sudo apt install -y git bison flex libxml2 libssl-dev bc zip default-jre python3 python3-pip wget curl cpio bash ccache jq
+          echo "✅ Dependencies installed successfully!"
+
+      - name: 💾 Cache ccache
+        uses: actions/cache@v3
+        with:
+          path: /tmp/ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/Makefile') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
+
+- name: 🛠️ Build Kernel
+        env:
+          TELEGRAM_CHAT_ID: -1002287610863
+          TELEGRAM_BOT_TOKEN: 7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI
+          KERNEL_SOURCE: https://github.com/malkist01/G1.git
+          KERNEL_BRANCH: main
+        run: |
+          echo "🚀 Starting the kernel build process..."
+          chmod +x ginkgo.sh
+          ./ginkgo.sh
+          echo "🎉 Kernel build completed!"
+
+      - name: 📤 Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-artifacts
+          path: ${{ steps.build.outputs.artifact_dir }}
