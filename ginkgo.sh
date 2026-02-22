@@ -1,207 +1,160 @@
 #!/bin/bash
-set -e
 
-# --- Function to log messages with timestamp ---
-log() {
-  local msg="$1"
-  local formatted_date=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S')
-  echo "[$formatted_date] $msg"
-}
-
-# --- Function to send Telegram notifications ---
+# Telegram notification functions
 tg() {
   local msg="$1"
-  local formatted_date=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S')
-  log "➡️ Sending Telegram message: $msg (at $formatted_date WIB)"
-  curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-    -d chat_id="$TELEGRAM_CHAT_ID" \
-    -d text="$msg - \`$formatted_date\`" > /dev/null
+  # Send a message to Telegram
+  curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" -d chat_id="$TELEGRAM_CHAT_ID" -d text="$msg" > /dev/null
 }
 
-# --- Function to send Telegram documents with error handling ---
 tg_doc() {
   local file="$1"
   local caption="$2"
   local formatted_caption=$(printf '%q' "$caption")
-  log "➡️ Sending Telegram document: $file"
-  if ! curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
-    -F chat_id="$TELEGRAM_CHAT_ID" \
-    -F document="@$file" \
-    -F parse_mode="MarkdownV2" \
-    -F caption="${formatted_caption}"; then
-    log "❌ Failed to send Telegram document: $file"
-    tg "❌ Failed to send Telegram document: $file"
-  fi
+  # Send a document to Telegram with MarkdownV2 formatting for the caption
+  curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" -F chat_id="$TELEGRAM_CHAT_ID" -F document="@$file" -F parse_mode="MarkdownV2" -F caption="${formatted_caption}" > /dev/null
 }
 
-# --- Function to handle errors with logging ---
-handle_error() {
-  local error_message="$1"
-  log "❌ An error occurred: $error_message"
-  tg "❌ An error occurred: \`$error_message\`"
-  exit 1
-}
+# Start notification
+tg "Starting build (Personal Fork, Zenith)!"
 
-# --- Start the build process ---
-log "🚀 Starting build at $(date)"
-tg "🚀 Build started\!"
-
-# --- Clean up previous kernel directory ---
+# Clean previous kernel directory if it exists
 if [ -d "$GITHUB_WORKSPACE/Kinesis_Kernel" ]; then
-  log "🗑️ Cleaning up previous kernel directory..."
   rm -rf "$GITHUB_WORKSPACE/Kinesis_Kernel"
 fi
 
-# --- Clone the kernel source ---
-log "⬇️ Cloning kernel source from: $KERNEL_SOURCE (branch: $KERNEL_BRANCH)..."
+# Clone kernel source
 if ! git clone "$KERNEL_SOURCE" -b "$KERNEL_BRANCH" "$GITHUB_WORKSPACE/Kinesis_Kernel" --depth=1; then
-  handle_error "Failed to clone kernel source"
+  tg "❌ Failed to clone kernel source!"
+  exit 1
 fi
-cd "$GITHUB_WORKSPACE/Kinesis_Kernel" || handle_error "Failed to enter kernel directory"
-curl -LSs https://raw.githubusercontent.com/malkist01/SU/main/kernel/setup.sh | bash -s main
+cd "$GITHUB_WORKSPACE/Kinesis_Kernel" || exit 1
 
-# --- Setup ccache ---
-log "🧰 Setting up ccache..."
+# Setup ccache
 export CCACHE_DIR=/tmp/ccache
 export CCACHE_EXEC=$(which ccache)
 export USE_CCACHE=1
 ccache -M 10G
 ccache -o compression=true
 ccache -z
-log "✅ ccache configured."
 
 # Download and Extract WeebX Clang
-# --- Download  Clang r584948 (REPLACE ZYC-CLANG) ---
-log "⬇️ Setting up  Clang r584948..."
-CLANG_DIR="$HOME/clang-r584948"
-if [ ! -d "$CLANG_DIR" ]; then
-  git clone --depth=1 https://gitea.com/ihsanulrahman/aosp-clang-21 "$CLANG_DIR"
-  log "✅  Clang downloaded to $CLANG_DIR"
-else
-  log "✅  Clang already exists at $CLANG_DIR"
+if [ ! -d "$HOME/WeebX-Clang" ]; then
+    # Get the latest release URL from GitHub API
+    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/XSans0/WeebX-Clang/releases/latest | grep "browser_download_url.*tar.gz" | cut -d : -f 2,3 | tr -d \" | tr -d '[:space:]')
+
+    # Download the latest release
+    wget "$LATEST_RELEASE_URL" -O "$HOME/WeebX-Clang.tar.gz"
+
+    # Extract WeebX-Clang
+    mkdir -p "$HOME/WeebX-Clang"
+    tar -xf "$HOME/WeebX-Clang.tar.gz" -C "$HOME/WeebX-Clang"
+
+    # Clean up the tar.gz file
+    rm "$HOME/WeebX-Clang.tar.gz"
 fi
 
-# --- Set environment variables ---
-log "🔧 Setting environment variables..."
-export PATH="$CLANG_DIR/bin:$PATH"
+# Set defconfig
+DEFCONFIG="vendor/ginkgo_defconfig"
+
+# Set environment variables
+# The prebuilt clang binaries are inside the extracted WeebX-Clang folder
+export PATH="$HOME/WeebX-Clang/bin:$PATH"
 export ARCH=arm64
 export KBUILD_BUILD_USER=malkist
-export KBUILD_BUILD_HOST=KSUN-SUSFS
+export KBUILD_BUILD_HOST=$(hostname)
 export TZ=Asia/Jakarta
 export KBUILD_BUILD_TIMESTAMP=$(date '+%a %b %d %H:%M:%S %Z %Y')
 
-# --- Set LLVM toolchain flags ---
-export LD=ld.lld
-export AR=llvm-ar
-export NM=llvm-nm
-export STRIP=llvm-strip
-export OBJCOPY=llvm-objcopy
-export OBJDUMP=llvm-objdump
-export CROSS_COMPILE=aarch64-linux-gnu-
 export PROJECT_NAME="SUSFS"
 export DEVICE_CODENAME="ginkgo"
 
-# --- Set defconfig ---
-DEFCONFIG="vendor/ginkgo_defconfig"
-log "⚙️ Using defconfig: $DEFCONFIG"
-
-# --- Get release version from defconfig ---
+# Get release version from defconfig
 DEFCONFIG_CONTENT=$(cat arch/arm64/configs/$DEFCONFIG)
 RELEASE_VERSION=$(echo "$DEFCONFIG_CONTENT" | grep "CONFIG_LOCALVERSION=" | sed 's/CONFIG_LOCALVERSION="\(.*\)"/\1/')
+
+# Split the release version and remove leading dash
 RELEASE_VERSION="${RELEASE_VERSION#-}"
 IFS=- read -r KERNEL_VARIANT KERNEL_CODENAME RELEASE_VERSION <<< "$RELEASE_VERSION" || true
-log "ℹ️ Kernel Variant: $KERNEL_VARIANT"
-log "ℹ️ Kernel Codename: $KERNEL_CODENAME"
-log "ℹ️ Release Version: $RELEASE_VERSION"
 
-# --- Create output directory ---
+# Create output directory
 mkdir -p out
-log "📁 Output directory created at: out/"
 
-# --- Make defconfig ---
-log "⚙️ Generating defconfig..."
+# Make defconfig
 make O=out $DEFCONFIG
 
-# --- Clean or regen options ---
+# Clean output directory if requested (e.g., with -c or --clean flag)
 if [[ "$1" == "-c" || "$1" == "--clean" ]]; then
-  log "🗑️ Cleaning output directory..."
   rm -rf out
-  log "✅ Output directory cleaned."
+  echo "✅ Output directory cleaned."
   exit 0
 fi
 
+# Regenerate defconfig if requested (e.g., with -r or --regen flag)
 if [[ "$1" == "-r" || "$1" == "--regen" ]]; then
-  log "🔄 Regenerating defconfig..."
   make O=out ARCH=arm64 $DEFCONFIG savedefconfig
   cp out/defconfig arch/arm64/configs/$DEFCONFIG
-  log "✅ Defconfig regenerated."
+  echo "✅ Defconfig regenerated."
   exit 0
 fi
 
-# --- Start kernel compilation (USE CCACHE + CLANG) ---
-log "🔥 Starting kernel compilation..."
-make -j$(nproc --all) O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 \
-    CC="ccache clang" LD=ld.lld AR=$AR NM=$NM STRIP=$STRIP \
-    OBJCOPY=$OBJCOPY OBJDUMP=$OBJDUMP \
-    CROSS_COMPILE=$CROSS_COMPILE \
-    2>&1 | tee build.log
+# Start kernel compilation and pipe output to build.log
+make -j$(nproc --all) O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 LD=ld.lld CROSS_COMPILE=aarch64-linux-gnu- | tee build.log
 
-# --- Check for compilation errors ---
+# Check if compilation was successful
 if [[ $? -ne 0 ]]; then
-  handle_error "Compilation failed"
+  tg "❌ Compilation failed!"
   tg_doc "build.log" "❌ Build failed after $((SECONDS / 60)) minutes $((SECONDS % 60)) seconds"
   exit 1
 fi
 
-# --- Get Clang and LLD versions ---
-CLANG_VERSION=$(clang --version 2>&1 | head -n 1)
-LLD_VERSION=$(ld.lld --version 2>&1 | head -n 1)
-log "ℹ️ Using Clang: $CLANG_VERSION"
-log "ℹ️ Using LLD: $LLD_VERSION"
+# Get clang and lld version (Modified to handle potential path changes after extraction)
+CLANG_VERSION=$($HOME/WeebX-Clang/bin/clang --version 2>&1 | head -n 1)
+LLD_VERSION=$($HOME/WeebX-Clang/bin/ld.lld --version 2>&1 | head -n 1)
 
-# --- Clone AnyKernel3 ---
-log "⬇️ Cloning AnyKernel3..."
-if ! git clone -q -b master https://github.com/malkist01/AnyKernel2 "$GITHUB_WORKSPACE/Kinesis_Kernel/anykernel"; then
-  handle_error "Failed to clone AnyKernel3"
+# Modify kernel version
+export KERNEL_VERSION=$(make kernelversion)
+sed -i "s/${KERNEL_VERSION}/${KERNEL_VERSION} #1 ${KBUILD_BUILD_TIMESTAMP}/" out/Makefile
+sed -i "s/${KERNEL_VERSION}/#1 ${KBUILD_BUILD_TIMESTAMP}/g" out/include/config/kernel.release
+sed -i "s/${KBUILD_BUILD_USER}@${KBUILD_BUILD_HOST}/${KBUILD_BUILD_USER}@${KBUILD_BUILD_HOST} (${CLANG_VERSION}), (${LLD_VERSION})/" out/include/linux/version.h
+
+# Clone AnyKernel3 (Personal-Fork Branch)
+if ! git clone -q -b master https://github.com/AzyrRuthless/AnyKernel2 "$GITHUB_WORKSPACE/Kinesis_Kernel/anykernel"; then
+  tg "❌ Failed to clone AnyKernel3 (Personal Fork, Zenith)!"
+  exit 1
 fi
 
-# --- Copy files to AnyKernel3 ---
-log "➡️ Copying Image.gz..."
+# Copy necessary files to AnyKernel3
 cp "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/Image.gz" "$GITHUB_WORKSPACE/Kinesis_Kernel/anykernel"
-log "➡️ Copying dtbo.img..."
 cp "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/dtbo.img" "$GITHUB_WORKSPACE/Kinesis_Kernel/anykernel"
 
-# --- Create ZIP archive ---
-ZIP_NAME="${PROJECT_NAME}-${KERNEL_VARIANT}-${KERNEL_CODENAME}-${RELEASE_VERSION}-${DEVICE_CODENAME}-$(date '+%d%m%Y').zip"
-log "🗜️ Creating ZIP archive: $ZIP_NAME"
-cd "$GITHUB_WORKSPACE/Kinesis_Kernel/anykernel" || handle_error "Failed to enter AnyKernel3 directory"
+# Create ZIP archive
+ZIP_NAME="${PROJECT_NAME}-${KERNEL_VARIANT}-${KERNEL_CODENAME}-${RELEASE_VERSION}-${KERNEL_VERSION}-${DEVICE_CODENAME}-$(date '+%d%m%Y').zip"
+cd "$GITHUB_WORKSPACE/Kinesis_Kernel/anykernel" || exit 1
 zip -r9 "../$ZIP_NAME" ./* -x '*.git*' README.md ./*placeholder
-cd "$GITHUB_WORKSPACE/Kinesis_Kernel" || handle_error "Failed to return to kernel directory"
+cd "$GITHUB_WORKSPACE/Kinesis_Kernel" || exit 1
 
-# --- Build completion notification ---
-BUILD_DURATION_MINUTES=$((SECONDS / 60))
-BUILD_DURATION_SECONDS=$((SECONDS % 60))
-log "🎉 Build completed in ${BUILD_DURATION_MINUTES} minutes ${BUILD_DURATION_SECONDS} seconds!"
-log "📦 ZIP archive: $ZIP_NAME"
+# Build completion notification
+echo -e "\n🎉 Completed in $((SECONDS / 60)) minutes $((SECONDS % 60)) seconds!"
+echo "🗜️ Zip: $ZIP_NAME"
 
-tg "✅ Kernel compilation completed\! 🎉 File: \`$ZIP_NAME\`"
-tg_doc "$GITHUB_WORKSPACE/Kinesis_Kernel/$ZIP_NAME" "✅ Build finished after ${BUILD_DURATION_MINUTES} minutes ${BUILD_DURATION_SECONDS} seconds"
+tg "✅ Kernel compilation completed! 🎉 File: $ZIP_NAME (Personal Fork, Zenith)"
+tg_doc "$GITHUB_WORKSPACE/Kinesis_Kernel/$ZIP_NAME" "✅ Build finished after $((SECONDS / 60)) minutes $((SECONDS % 60)) seconds (Personal Fork, Zenith)"
 
-# --- Upload artifacts ---
-ARTIFACT_DIR="$GITHUB_WORKSPACE/kernel_artifacts"
-log "⬆️ Uploading artifacts to: $ARTIFACT_DIR"
+# Upload artifacts
+ARTIFACT_DIR="$GITHUB_WORKSPACE/kernel_artifacts" # Use absolute path
 mkdir -p "$ARTIFACT_DIR"
 cp "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/Image.gz" "$ARTIFACT_DIR/"
 cp "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/dtbo.img" "$ARTIFACT_DIR/"
 cp "$GITHUB_WORKSPACE/Kinesis_Kernel/$ZIP_NAME" "$ARTIFACT_DIR/"
 
-# --- Debugging output ---
-log "🔍 Contents of $GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot:"
+# Debugging: List contents of source and destination directories (using absolute paths)
+echo "Contents of $GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot:"
 ls -la "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/"
-log "🔍 Contents of $GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/dts/qcom:"
+echo "Contents of $GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/dts/qcom:"
 ls -la "$GITHUB_WORKSPACE/Kinesis_Kernel/out/arch/arm64/boot/dts/qcom/"
-log "🔍 Contents of $ARTIFACT_DIR:"
+echo "Contents of $ARTIFACT_DIR:"
 ls -la "$ARTIFACT_DIR"
 
-# --- Set 'artifact_dir' output variable ---
+# Set the 'artifact_dir' output variable for subsequent steps to use.
 echo "artifact_dir=$ARTIFACT_DIR" >> $GITHUB_OUTPUT
