@@ -71,21 +71,14 @@ ccache -z
 log "✅ ccache configured."
 
 # Download and Extract WeebX Clang
-log "⬇️ Setting up  WeebX-Clang..."
-CLANG_DIR="$HOME/WeebX-Clang"
+# --- Download  Clang r584948 (REPLACE ZYC-CLANG) ---
+log "⬇️ Setting up  Clang r584948..."
+CLANG_DIR="$HOME/clang-r584948"
 if [ ! -d "$CLANG_DIR" ]; then
-    # Get the latest release URL from GitHub API
-    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/XSans0/WeebX-Clang/releases/latest | grep "browser_download_url.*tar.gz" | cut -d : -f 2,3 | tr -d \" | tr -d '[:space:]')
-
-    # Download the latest release
-    wget "$LATEST_RELEASE_URL" -O "$CLANG_DIR/WeebX-Clang.tar.gz"
-
-    # Extract WeebX-Clang
-    mkdir -p "$CLANG_DIR"
-    tar -xf "$CLANG_DIR/WeebX-Clang.tar.gz" -C "$CLANG_DIR"
-
-    # Clean up the tar.gz file
-    rm "$CLANG_DIR/WeebX-Clang.tar.gz"
+  git clone --depth=1 https://gitea.com/ihsanulrahman/aosp-clang-21 "$CLANG_DIR"
+  log "✅  Clang downloaded to $CLANG_DIR"
+else
+  log "✅  Clang already exists at $CLANG_DIR"
 fi
 
 # --- Set environment variables ---
